@@ -298,17 +298,6 @@ void masterMPI_CyclicVertical(ConfigData *data, float *pixels)
     MPI_Status status;
     double computationStart = MPI_Wtime();
 
-    int columns_per_process = (data->width) / (data->mpi_procs);
-    int avg_per_process = columns_per_process;
-
-    int remaining_this_process = data->width % data->mpi_procs;
-    int remaining = remaining_this_process;
-    if (remaining > data->mpi_rank)
-    {
-        columns_per_process++;
-    }
-
-
     int start_cycle = data->cycleSize * data->mpi_rank;
     int cycle_counter = data->cycleSize *data->mpi_procs; 
 
@@ -338,7 +327,7 @@ void masterMPI_CyclicVertical(ConfigData *data, float *pixels)
 
     for (int proc = 1; proc < data->mpi_procs; proc++)
     {
-        int next = 0;
+       
         int columns_in_single_process = 0;
         start_cycle = data->cycleSize * proc;
         for (int z = start_cycle; z < data->width; z += cycle_counter)
@@ -351,20 +340,18 @@ void masterMPI_CyclicVertical(ConfigData *data, float *pixels)
             }
         }
 
+
         int total_pixels = 3 * columns_in_single_process * data->height;
-
         double comm_recv_buf = 0.0;
-
         float *proc_pixels = new float[total_pixels];
 
         MPI_Recv(proc_pixels, total_pixels, MPI_FLOAT, proc, 0, MPI_COMM_WORLD, &status);
         MPI_Recv(&comm_recv_buf, 1, MPI_DOUBLE, proc, 0, MPI_COMM_WORLD, &status);
 
-        
-
+        int next = 0;
         for (int cycle = start_cycle; cycle < data->width; cycle+= cycle_counter)
         {
-            for (int column = 0; column < data->width; column++)
+            for (int column = cycle; column < data->width; column++)
             {
                 for (int row = 0; row < (data->height); row++)
                 {
