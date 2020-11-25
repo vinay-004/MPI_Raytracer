@@ -1,0 +1,42 @@
+g++ src/main_seq.cpp -Wextra -Wall -Iinclude -g -lpng -lraytrace -Lobjs/x86_64 -o raytrace_seq
+/usr/bin/ld: objs/x86_64/libraytrace.a(RayTrace.o): relocation R_X86_64_32 against `.rodata' can not be used when making a PIE object; recompile with -fPIE
+/usr/bin/ld: objs/x86_64/libraytrace.a(World.o): relocation R_X86_64_32 against `.bss' can not be used when making a PIE object; recompile with -fPIE
+/usr/bin/ld: objs/x86_64/libraytrace.a(Camera.o): relocation R_X86_64_32 against `.rodata' can not be used when making a PIE object; recompile with -fPIE
+/usr/bin/ld: objs/x86_64/libraytrace.a(Color.o): relocation R_X86_64_32S against symbol `_ZTV5Color' can not be used when making a PIE object; recompile with -fPIE
+/usr/bin/ld: objs/x86_64/libraytrace.a(ConfigurationPa): relocation R_X86_64_32 against `.rodata' can not be used when making a PIE object; recompile with -fPIE
+/usr/bin/ld: objs/x86_64/libraytrace.a(GeometricObject): relocation R_X86_64_32S against symbol `_ZTV15GeometricObject' can not be used when making a PIE object; recompile with -fPIE
+/usr/bin/ld: objs/x86_64/libraytrace.a(HitRecord.o): relocation R_X86_64_32 against symbol `__gxx_personality_v0@@CXXABI_1.3' can not be used when making a PIE object; recompile with -fPIE
+/usr/bin/ld: objs/x86_64/libraytrace.a(MaterialPropert): relocation R_X86_64_32 against symbol `__gxx_personality_v0@@CXXABI_1.3' can not be used when making a PIE object; recompile with -fPIE
+/usr/bin/ld: objs/x86_64/libraytrace.a(Matrix44.o): relocation R_X86_64_32S against symbol `_ZTV8Matrix44' can not be used when making a PIE object; recompile with -fPIE
+/usr/bin/ld: objs/x86_64/libraytrace.a(ObjectFileParse): relocation R_X86_64_32 against `.rodata' can not be used when making a PIE object; recompile with -fPIE
+/usr/bin/ld: objs/x86_64/libraytrace.a(PhongBlinnIllum): relocation R_X86_64_32S against symbol `_ZTV22PhongBlinnIllumination' can not be used when making a PIE object; recompile with -fPIE
+/usr/bin/ld: objs/x86_64/libraytrace.a(PhongIlluminati): relocation R_X86_64_32S against symbol `_ZTV17PhongIllumination' can not be used when making a PIE object; recompile with -fPIE
+/usr/bin/ld: objs/x86_64/libraytrace.a(Point3.o): relocation R_X86_64_32S against symbol `_ZTV6Point3' can not be used when making a PIE object; recompile with -fPIE
+/usr/bin/ld: objs/x86_64/libraytrace.a(PointLight.o): relocation R_X86_64_32S against symbol `_ZTV10PointLight' can not be used when making a PIE object; recompile with -fPIE
+/usr/bin/ld: objs/x86_64/libraytrace.a(Ray.o): relocation R_X86_64_32 against symbol `__gxx_personality_v0@@CXXABI_1.3' can not be used when making a PIE object; recompile with -fPIE
+/usr/bin/ld: objs/x86_64/libraytrace.a(RotationXMatrix): relocation R_X86_64_32S against symbol `_ZTV15RotationXMatrix' can not be used when making a PIE object; recompile with -fPIE
+/usr/bin/ld: objs/x86_64/libraytrace.a(RotationYMatrix): relocation R_X86_64_32S against symbol `_ZTV15RotationYMatrix' can not be used when making a PIE object; recompile with -fPIE
+/usr/bin/ld: objs/x86_64/libraytrace.a(RotationZMatrix): relocation R_X86_64_32S against symbol `_ZTV15RotationZMatrix' can not be used when making a PIE object; recompile with -fPIE
+/usr/bin/ld: objs/x86_64/libraytrace.a(ScaleMatrix.o): relocation R_X86_64_32S against symbol `_ZTV11ScaleMatrix' can not be used when making a PIE object; recompile with -fPIE
+/usr/bin/ld: objs/x86_64/libraytrace.a(ShadeRecord.o): relocation R_X86_64_32 against symbol `__gxx_personality_v0@@CXXABI_1.3' can not be used when making a PIE object; recompile with -fPIE
+/usr/bin/ld: objs/x86_64/libraytrace.a(SmoothMeshTrian): relocation R_X86_64_32S against symbol `_ZTV18SmoothMeshTriangle' can not be used when making a PIE object; recompile with -fPIE
+/usr/bin/ld: objs/x86_64/libraytrace.a(Sphere.o): relocation R_X86_64_32S against symbol `_ZTV6Sphere' can not be used when making a PIE object; recompile with -fPIE
+/usr/bin/ld: objs/x86_64/libraytrace.a(TranslationMatr): relocation R_X86_64_32S against symbol `_ZTV17TranslationMatrix' can not be used when making a PIE object; recompile with -fPIE
+/usr/bin/ld: objs/x86_64/libraytrace.a(TriangleMesh.o): relocation R_X86_64_32S against symbol `_ZTV12TriangleMesh' can not be used when making a PIE object; recompile with -fPIE
+/usr/bin/ld: objs/x86_64/libraytrace.a(Triangle.o): relocation R_X86_64_32S against symbol `_ZTV8Triangle' can not be used when making a PIE object; recompile with -fPIE
+/usr/bin/ld: objs/x86_64/libraytrace.a(Vector3.o): relocation R_X86_64_32S against symbol `_ZTV7Vector3' can not be used when making a PIE object; recompile with -fPIE
+/usr/bin/ld: objs/x86_64/libraytrace.a(ViewPlane.o): relocation R_X86_64_32 against symbol `__gxx_personality_v0@@CXXABI_1.3' can not be used when making a PIE object; recompile with -fPIE
+/usr/bin/ld: objs/x86_64/libraytrace.a(BoundingBox.o): relocation R_X86_64_32 against symbol `__gxx_personality_v0@@CXXABI_1.3' can not be used when making a PIE object; recompile with -fPIE
+/usr/bin/ld: objs/x86_64/libraytrace.a(CheckerBoardXY.): relocation R_X86_64_32S against symbol `_ZTV14CheckerBoardXY' can not be used when making a PIE object; recompile with -fPIE
+/usr/bin/ld: objs/x86_64/libraytrace.a(CheckerBoardXZ.): relocation R_X86_64_32S against symbol `_ZTV14CheckerBoardXZ' can not be used when making a PIE object; recompile with -fPIE
+/usr/bin/ld: objs/x86_64/libraytrace.a(CheckerBoardYZ.): relocation R_X86_64_32S against symbol `_ZTV14CheckerBoardYZ' can not be used when making a PIE object; recompile with -fPIE
+/usr/bin/ld: objs/x86_64/libraytrace.a(FlatMeshTriangl): relocation R_X86_64_32S against symbol `_ZTV16FlatMeshTriangle' can not be used when making a PIE object; recompile with -fPIE
+/usr/bin/ld: objs/x86_64/libraytrace.a(IlluminationMod): relocation R_X86_64_32S against symbol `_ZTV17IlluminationModel' can not be used when making a PIE object; recompile with -fPIE
+/usr/bin/ld: objs/x86_64/libraytrace.a(MeshTriangle.o): relocation R_X86_64_32S against symbol `_ZTV12MeshTriangle' can not be used when making a PIE object; recompile with -fPIE
+/usr/bin/ld: objs/x86_64/libraytrace.a(Plane.o): relocation R_X86_64_32S against symbol `_ZTV5Plane' can not be used when making a PIE object; recompile with -fPIE
+/usr/bin/ld: objs/x86_64/libraytrace.a(CheckerBoard.o): relocation R_X86_64_32S against symbol `_ZTV12CheckerBoard' can not be used when making a PIE object; recompile with -fPIE
+/usr/bin/ld: /tmp/cclJxL6T.o: in function `main':
+/home/vinay/Downloads/CMPE.655.01 - Multiple Processor Systems - 1142020 - 1202 AM/Assignment2/project/src/main_seq.cpp:82: undefined reference to `generateFileName[abi:cxx11](ConfigData*)'
+/usr/bin/ld: /home/vinay/Downloads/CMPE.655.01 - Multiple Processor Systems - 1142020 - 1202 AM/Assignment2/project/src/main_seq.cpp:84: undefined reference to `savePixels(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, float*, ConfigData*)'
+collect2: error: ld returned 1 exit status
+make: *** [Makefile:38: raytrace_seq] Error 1
