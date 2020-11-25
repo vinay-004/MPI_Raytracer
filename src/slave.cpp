@@ -28,7 +28,7 @@ void slaveMain(ConfigData* data)
             slaveMPIBlock(data);
             break;
         case PART_MODE_STATIC_CYCLES_VERTICAL:
-            slaveMPICylicVertical(data);
+            slaveCyclesV(data);
             break;
         default:
             std::cout << "This mode (" << data->partitioningMode;
@@ -249,4 +249,48 @@ void slaveMPICylicVertical(ConfigData *data)
 
     MPI_Send(pixels, total_pixels, MPI_FLOAT, 0, 0, MPI_COMM_WORLD);
     MPI_Send(&computationTime, 1, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
+}
+
+void slaveCyclesV(ConfigData *data)
+{
+    //Start the computation time timer.
+    double computationStart = MPI_Wtime();
+
+    int my_cols = 0;       // Number of columns this process will render.
+    int bundle_column = 0; // The column inside our bundle.
+
+    // Calculate number of columns this process will render
+    for (int cycle = data->mpi_rank * data->cycleSize; cycle < data->width; cycle += data->cycleSize * data->mpi_procs)
+    {
+        for (int column = cycle; (column - cycle < data->cycleSize) && (column < data->width); column++)
+        {
+            my_cols++;
+        }
+    }
+
+    // Allocate memory for our columns
+    float *my_pixels = new float[3 * data->height * my_cols];
+
+    for (int cycle = data->mpi_rank * data->cycleSize; cycle < data->width; cycle += data->cycleSize * data->mpi_procs)
+    {
+        for (int column = cycle; (column - cycle < data->cycleSize) && (column < data->width); column++)
+        {
+            for (int row = 0; row < data->height; row++)
+            {
+                //Calculate the index into the array.
+                int baseIndex = 3 * (bundle_column * data->width + row);
+                shadePixel(&(my_pixels[baseIndex]), row, column, data);
+            }
+            bundle_column++;
+        }
+    }
+
+    //Stop the comp. timer
+    double computationStop = MPI_Wtime();
+    double computationTime = computationStop - computationStart;
+
+    MPI_Send(my_pixels, 3 * data->width * my_cols, MPI_FLOAT, 0, 0, MPI_COMM_WORLD);
+    MPI_Send(&computationTime, 1, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
+
+    delete[] my_pixels;
 }

@@ -8,5 +8,5 @@ void slaveMPIHorizontal(ConfigData *data);
 void slaveMPIVertical(ConfigData *data);
 void slaveMPIBlock(ConfigData *data);
 void slaveMPICylicVertical(ConfigData *data);
-
+void slaveCyclesV(ConfigData *data);
 #endif
