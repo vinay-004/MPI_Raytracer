@@ -510,3 +510,4 @@ void masterMPI_Block(ConfigData *data, float *pixels)
     double c2cRatio = communicationTime / computationTime;
     std::cout << "C-to-C Ratio: " << c2cRatio << std::endl;
 }
+
