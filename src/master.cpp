@@ -345,8 +345,8 @@ void masterMPI_Block(ConfigData *data, float *pixels)
         int proc_columns = data->width / (each_proc_sqrt);
         int proc_rows = data->height / (each_proc_sqrt);
 
-        int proc_start_columns = (proc % (each_proc_sqrt)) * proc_columns;
-        int proc_start_rows = (proc / (each_proc_sqrt)) * proc_rows;
+        int proc_start_columns = (proc / (each_proc_sqrt)) * proc_columns;
+        int proc_start_rows = (proc % (each_proc_sqrt)) * proc_rows;
 
         
         if (remaining_columns)
