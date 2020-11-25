@@ -57,7 +57,7 @@ void masterMain(ConfigData* data)
         case PART_MODE_STATIC_CYCLES_VERTICAL:
 
             startTime = MPI_Wtime();
-            masterCyclesV(data, pixels);
+            masterMPI_CyclicVertical(data, pixels);
             stopTime = MPI_Wtime();
             break;
 
