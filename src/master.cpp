@@ -2,7 +2,7 @@
 
 #include <iostream>
 #include <mpi.h>
-
+#include<math.h>
 #include "RayTrace.h"
 #include "master.h"
 
@@ -50,9 +50,9 @@ void masterMain(ConfigData* data)
             break;
         case PART_MODE_STATIC_BLOCKS:
 
-            // startTime = MPI_Wtime();
-            // masterMPI_Block(data, pixels);
-            // stopTime = MPI_Wtime();
+            startTime = MPI_Wtime();
+            masterMPI_Block(data, pixels);
+            stopTime = MPI_Wtime();
             break;
         default:
             std::cout << "This mode (" << data->partitioningMode;
@@ -111,78 +111,6 @@ void masterSequential(ConfigData* data, float* pixels)
     std::cout << "C-to-C Ratio: " << c2cRatio << std::endl;
 }
 
-// void masterMPI_Horizontal(ConfigData *data, float *pixels)
-// {
-
-//     int avg_rows_per_process = data->height / data->mpi_procs;
-//     int start_row = 0;
-//     int end_row = 0;
-//     MPI_Status status;
-
-//     float* proc_pixel = new float[3 * data->width * data->height];
-//     int total_pixels = 3 * data->width * data->height;
-//     //send start row and column to all slave processes
-//     for (int proc = 1; proc < data->mpi_procs; proc++) {   
-        
-//         end_row = start_row + avg_rows_per_process - 1;
-//         // [start_column, end_column]
-//         // share proc_pixel array with processes 
-//         MPI_Send(&start_row, 1, MPI_INT, proc, 0, MPI_COMM_WORLD);
-//         MPI_Send(&end_row, 1, MPI_INT, proc, 0, MPI_COMM_WORLD);
-//         MPI_Send(&proc_pixel, total_pixels, MPI_FLOAT, proc, 0, MPI_COMM_WORLD);
-
-//         std::cout << "start_column : " << start_row << std::endl;
-//         std::cout << "end_column : " << end_row << std::endl;
-//         std::cout << "pixel : " << proc_pixel[0] << std::endl;
-
-//         start_row += avg_rows_per_process;
-//     }
-
-//     std::cout<<"SENDING DONE"<<std::endl;
-//     // render the remaining pixel data in master
-//     // all the rows from 0 to height
-//     for (int i = start_row; i < data->height; ++i) {
-//         // only the remaining columns in the master
-//         for (int j = 0; j < data->width; ++j) {
-//             int row = i;
-//             int column = j;
-
-//             //Calculate the index into the array.
-//             int baseIndex = 3 * (row * data->width + column);
-
-//             //Call the function to shade the pixel.
-//             shadePixel(&(pixels[baseIndex]), row, column, data);
-//         }
-//     }
-
-//     std::cout<<" DONE WITH COMPUTATION"<<std::endl;
-    
-//     start_row = 0;
-//     end_row = 0;
-
-//     for (int proc = 1; proc < data->mpi_procs; proc++) {
-
-//         MPI_Recv(&proc_pixel, total_pixels, MPI_FLOAT, proc, 1, MPI_COMM_WORLD, &status);
-
-//         end_row = start_row + avg_rows_per_process -1;
-//         for (int i = start_row; i < end_row; ++i) {
-//             // only the remaining columns in the master
-//             for (int j = 0; j <= data->width; ++j) {
-//                 int row = i;
-//                 int column = j;
-
-//                 //Calculate the index into the array.
-//                 int baseIndex = 3 * (row * data->width + column);
-
-//                 //Call the function to shade the pixel.
-//                 pixels[baseIndex] = proc_pixel[baseIndex];
-//                 pixels[baseIndex + 1] = proc_pixel[baseIndex+1];
-//                 pixels[baseIndex + 2] = proc_pixel[baseIndex + 2];
-//             }
-//         }
-//         start_row += avg_rows_per_process;
-//     }
-// }
 
 void masterMPI_Horizontal(ConfigData *data, float *pixels)
 {
@@ -357,110 +285,123 @@ void masterMPI_Vertical(ConfigData *data, float *pixels)
     std::cout << "C-to-C Ratio: " << c2cRatio << std::endl;
 }
 
-// //void masterMPI_Block(ConfigData *data, float *pixels)
-// {
+void masterMPI_Block(ConfigData *data, float *pixels)
+{
+    double computationStart = MPI_Wtime();
 
-//     int avg_rows_per_process = data->height / data->mpi_procs;
-//     int avg_columns_per_process = data->width / data->mpi_procs;
-//     int start_column = 0;
-//     int end_column = 0;
-//     int start_row = 0;
-//     int end_row = 0;
-//     MPI_Status status;
+    MPI_Status status;
+    int each_proc_sqrt = (int)sqrt(data->mpi_procs);
+    int columns_per_process = data->width / each_proc_sqrt;
+    int rows_per_process = data->height / each_proc_sqrt;
 
-//     float *proc_pixel = new float[3 * data->width * data->height];
-//     int total_pixels = 3 * data->width * data->height;
-//     //send start row and column to all slave processes
-//     for (int proc = 1; proc < data->mpi_procs; proc++)
-//     {
+    int remaining_columns = data->width % each_proc_sqrt;
+    int remaining_rows = data->height % each_proc_sqrt;
 
-//         end_row = start_row + avg_rows_per_process -1;
-//         end_column = start_column + avg_columns_per_process - 1;
+    int start_column = (data->mpi_rank / (each_proc_sqrt)) * columns_per_process;
+    int start_row = (data->mpi_rank % (each_proc_sqrt)) * rows_per_process;
 
-//         if(end_row == data->height-1)
-//         {
-//             start_row = 0; 
-//         }
-//         if(end_column == data->width - 1)
-//         {
-//             end_column = 0;
-//         }        
-//         // [start_column, end_column]
-//         // share proc_pixel array with processes
-//         MPI_Send(&start_row, 1, MPI_INT, proc, 0, MPI_COMM_WORLD);
-//         MPI_Send(&end_row, 1, MPI_INT, proc, 0, MPI_COMM_WORLD);
+    
+    if (remaining_columns)
+    {
+        if ((data->mpi_rank % (each_proc_sqrt)) == (each_proc_sqrt)-1)
+        { 
+            columns_per_process += remaining_columns;
+        }
+    }
+    
+    if (remaining_rows)
+    {
+        if (data->mpi_rank / (each_proc_sqrt) == (each_proc_sqrt)-1)
+        { 
+            rows_per_process += remaining_rows;
+        }
+    }
 
-//         MPI_Send(&start_column, 1, MPI_INT, proc, 0, MPI_COMM_WORLD);
-//         MPI_Send(&end_column, 1, MPI_INT, proc, 0, MPI_COMM_WORLD);
-//         MPI_Send(&proc_pixel, total_pixels, MPI_FLOAT, proc, 0, MPI_COMM_WORLD);
+    int end_column = start_column + columns_per_process;
+    int end_row = start_row + rows_per_process;
 
-//         std::cout << "start_column : " << start_column << std::endl;
-//         std::cout << "end_column : " << end_column << std::endl;
-//         std::cout << "pixel : " << proc_pixel[0] << std::endl;
+    for (int i = start_row; i < end_row; i++)
+    {
+        for (int j = start_column; j < end_column; j++)
+        {         
+            int row = i;
+            int column = j;
+            int baseIndex = 3 * (row * data->width + column);
 
-//         start_column += avg_columns_per_process;
-//     }
+            shadePixel(&(pixels[baseIndex]), row, column, data); 
+        }
+    }
 
-//     std::cout << "SENDING DONE" << std::endl;
-//     // render the remaining pixel data in master
-//     // all the rows from 0 to height
-//     // for (int i = 0; i < data->height; ++i)
-//     // {
-//     //     // only the remaining columns in the master
-//     //     for (int j = start_column; j < data->width; ++j)
-//     //     {
-//     //         int row = i;
-//     //         int column = j;
+    double computationStop = MPI_Wtime();
+    double computationTime = computationStop - computationStart;
 
-//     //         //Calculate the index into the array.
-//     //         int baseIndex = 3 * (row * data->width + column);
+    
+    double communicationTime = 0.0;
 
-//     //         //Call the function to shade the pixel.
-//     //         shadePixel(&(pixels[baseIndex]), row, j, data);
-//     //     }
-//     // }
+    for (int proc = 1; proc < data->mpi_procs; proc++)
+    { 
 
-//     std::cout << " DONE WITH COMPUTATION" << std::endl;
+       
+        int proc_columns = data->width / (each_proc_sqrt);
+        int proc_rows = data->height / (each_proc_sqrt);
 
-//     start_column = 0;
-//     end_column = 0;
+        int proc_start_columns = (proc % (each_proc_sqrt)) * proc_columns;
+        int proc_start_rows = (proc / (each_proc_sqrt)) * proc_rows;
 
-//     start_row = 0;
-//     end_row = 0;
-
-//     for (int proc = 1; proc < data->mpi_procs; proc++)
-//     {
-
-//         MPI_Recv(&proc_pixel, total_pixels, MPI_FLOAT, proc, 1, MPI_COMM_WORLD, &status);
-
-//         end_row = start_row + avg_rows_per_process - 1;
-//         end_column = start_column + avg_columns_per_process - 1;
-//         if(end_row == data->height -1)
-//         {
-//             start_row = 0;
-//         }
-//         if(end_column == data->width -1)
-//         {
-//             start_column = 0;
-//         }
         
-//         for (int i = start_row; i < end_row; ++i)
-//         {
-//             // only the remaining columns in the master
-//             for (int j = start_column; j <= end_column; ++j)
-//             {
-//                 int row = i;
-//                 int column = j;
+        if (remaining_columns)
+        {
+            if (proc % (each_proc_sqrt) == (each_proc_sqrt) - 1)
+            { 
+                proc_columns += remaining_columns;
+            }
+        }
+      
+        if (remaining_rows)
+        {
+            if ((proc / (each_proc_sqrt)) == (each_proc_sqrt) - 1)
+            { 
+                proc_rows += remaining_rows;
+            }
+        }
 
-//                 //Calculate the index into the array.
-//                 int baseIndex = 3 * (row * data->width + column);
+        end_column = proc_start_columns + proc_columns;
+        end_row = proc_start_rows + proc_rows;
 
-//                 //Call the function to shade the pixel.
-//                 pixels[baseIndex] = proc_pixel[baseIndex];
-//                 pixels[baseIndex + 1] = proc_pixel[baseIndex + 1];
-//                 pixels[baseIndex + 2] = proc_pixel[baseIndex + 2];
-//             }
-//         }
-//         start_column += avg_columns_per_process;
-//     }
-// }
+
+        int total_pixels = 3 * proc_columns * proc_rows;
+
+        float *proc_pixels = new float[total_pixels];
+
+        MPI_Recv(proc_pixels, total_pixels, MPI_FLOAT, proc, 0, MPI_COMM_WORLD, &status);
+
+        for (int i = proc_start_rows; i < end_row; i++)
+        {
+            for (int j = proc_start_columns; j < end_column; j++)
+            { 
+                int row = i;
+                int column = j;
+
+                int proc_row_width = row - proc_start_rows;
+                int proc_col_width = column - proc_start_columns;
+
+                int baseIndex = 3 * (row * data->width + column);
+                int procIndex = 3 * ((row - proc_start_rows) * proc_rows + (column - proc_start_columns));
+
+                pixels[baseIndex] = recv_buf[procIndex];
+                pixels[baseIndex + 1] = recv_buf[procIndex + 1];
+                pixels[baseIndex + 2] = recv_buf[procIndex + 2];
+            }
+        }
+
+        
+    }
+
+    //Print the times and the c-to-c ratio
+    //This section of printing, IN THIS ORDER, needs to be included in all of the
+    //functions that you write at the end of the function.
+    std::cout << "Total Computation Time: " << computationTime << " seconds" << std::endl;
+    std::cout << "Total Communication Time: " << communicationTime << " seconds" << std::endl;
+    double c2cRatio = communicationTime / computationTime;
+    std::cout << "C-to-C Ratio: " << c2cRatio << std::endl;
+}

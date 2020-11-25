@@ -4,6 +4,7 @@
 #include <mpi.h>
 #include "RayTrace.h"
 #include "slave.h"
+#include<math.h>
 
 void slaveMain(ConfigData* data)
 {
@@ -24,7 +25,7 @@ void slaveMain(ConfigData* data)
             slaveMPIVertical(data);
             break;
         case PART_MODE_STATIC_BLOCKS:
-            //slaveMPIBlock(data);
+            slaveMPIBlock(data);
             break;
         default:
             std::cout << "This mode (" << data->partitioningMode;
@@ -140,44 +141,58 @@ void slaveMPIVertical(ConfigData *data) {
 }
 
 
-// void slaveMPIBlock(ConfigData *data, float *pixels)
-// {
+void slaveMPIBlock(ConfigData *data, float *pixels)
+{
+    double computationTime = MPI_Wtime();
 
-//     MPI_Status status;
-//     int start_column;
-//     int end_column;
+    MPI_Status status;
+    int each_proc_sqrt = (int)sqrt(data->mpi_procs);
+    int columns_per_process = data->width / each_proc_sqrt;
+    int rows_per_process = data->height / each_proc_sqrt;
 
-//     int start_row;
-//     int end_row;
+    int remaining_columns = data->width % each_proc_sqrt;
+    int remaining_rows = data->height % each_proc_sqrt;
 
-//     int total_pixels = 3 * data->width * data->height;
+    int start_column = (data->mpi_rank / (each_proc_sqrt)) * columns_per_process;
+    int start_row = (data->mpi_rank % (each_proc_sqrt)) * rows_per_process;
 
-//     MPI_Recv(&start_row, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, &status);
-//     MPI_Recv(&end_row, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, &status);
+    if (remaining_columns)
+    {
+        if ((data->mpi_rank % (each_proc_sqrt)) == (each_proc_sqrt)-1)
+        {
+            columns_per_process += remaining_columns;
+        }
+    }
 
-//     MPI_Recv(&start_column, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, &status);
-//     MPI_Recv(&end_column, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, &status);
-//     MPI_Recv(&pixels, total_pixels, MPI_FLOAT, 0, 0, MPI_COMM_WORLD, &status);
+    if (remaining_rows)
+    {
+        if (data->mpi_rank / (each_proc_sqrt) == (each_proc_sqrt)-1)
+        {
+            rows_per_process += remaining_rows;
+        }
+    }
 
-//     std::cout << "start_column : " << start_column << std::endl;
-//     std::cout << "end_column : " << end_column << std::endl;
-//     std::cout << "pixel : " << pixels[0] << std::endl;
+    int end_column = start_column + columns_per_process;
+    int end_row = start_row + rows_per_process;
 
-//     //Render the scene.
-//     for (int i = start_row; i < end_row; ++i)
-//     {
-//         for (int j = start_column; j <= end_column; ++j)
-//         {
-//             int row = i;
-//             int column = j;
+    int totat_pixels = 3 * columns_per_process * rows_per_process;
+    float *pixels = new float[totat_pixels];
+    for (int i = start_row; i < end_row; i++)
+    {
+        for (int j = start_column; j < end_column; j++)
+        {
+            int row = i;
+            int column = j;
+            
+            int base_row = row - start_row;
+            int proc_row_width = columns_per_process;
+            int base_column = column - start_column;
 
-//             //Calculate the index into the array.
-//             int baseIndex = 3 * (row * data->width + column);
+            int baseIndex = 3 * (base_row * proc_row_width + base_column);
 
-//             //Call the function to shade the pixel.
-//             shadePixel(&(pixels[baseIndex]), row, column, data);
-//         }
-//     }
+            shadePixel(&(pixels[baseIndex]), row, column, data);
+        }
+    }
 
-//     MPI_Send(&pixels, total_pixels, MPI_FLOAT, 0, 1, MPI_COMM_WORLD);
-// }
+    MPI_Send(&pixels, totat_pixels, MPI_FLOAT, 0, 1, MPI_COMM_WORLD);
+}
