@@ -74,7 +74,7 @@ void slaveMPIVertical(ConfigData *data) {
 
     double computationStart = MPI_Wtime();
 
-    MPI_Status status;
+
 
 
     int avg_columns_per_process = data->width / data->mpi_procs;    
