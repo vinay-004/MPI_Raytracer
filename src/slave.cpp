@@ -28,7 +28,7 @@ void slaveMain(ConfigData* data)
             slaveMPIBlock(data);
             break;
         case PART_MODE_STATIC_CYCLES_VERTICAL:
-            slaveCyclesV(data);
+            slaveMPICylicVertical(data);
             break;
         default:
             std::cout << "This mode (" << data->partitioningMode;
@@ -211,86 +211,40 @@ void slaveMPICylicVertical(ConfigData *data)
 
     int columns_per_process = 0;
 
-    int start_cycle = data->cycleSize * data->mpi_rank;
-    int cycle_counter = data->cycleSize * data->mpi_procs;
-
-    for (int z = start_cycle; z < data->width; z += cycle_counter)
-    {
-        for (int j = z; j < data->width; j++)
-        {
-            int column = j;
-            if (column < z + data->cycleSize)
-                columns_per_process++;
-        }
-    }
-
-    int total_pixels = 3 * data->height * columns_per_process;
-    float *pixels = new float[total_pixels];
-    int next = 0;
-    for (int cycle = start_cycle; cycle < data->width; cycle += cycle_counter)
-    {
-        for (int column = cycle; column < data->width; column++)
-        {
-            for (int row = 0; row < (data->height); row++)
-            {
-
-                if (column < cycle + data->cycleSize)
-                {
-                    int baseIndex = 3 * (row + data->width * next);
-                    shadePixel(&(pixels[baseIndex]), row, column, data);
-                }
-            }
-            next++;
-        }
-    }
-
-    double computationStop = MPI_Wtime();
-    double computationTime = computationStop - computationStart;
-
-    MPI_Send(pixels, total_pixels, MPI_FLOAT, 0, 0, MPI_COMM_WORLD);
-    MPI_Send(&computationTime, 1, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
-}
-
-void slaveCyclesV(ConfigData *data)
-{
-    //Start the computation time timer.
-    double computationStart = MPI_Wtime();
-
-    int my_cols = 0;       // Number of columns this process will render.
-    int bundle_column = 0; // The column inside our bundle.
-
-    // Calculate number of columns this process will render
-    for (int cycle = data->mpi_rank * data->cycleSize; cycle < data->width; cycle += data->cycleSize * data->mpi_procs)
+    int start_column = data->mpi_rank * data->cycleSize;
+    int counter = data->cycleSize * data->mpi_procs;
+    
+    for (int cycle = start_column; cycle < data->width; cycle += counter)
     {
         for (int column = cycle; (column - cycle < data->cycleSize) && (column < data->width); column++)
         {
-            my_cols++;
+            columns_per_process++;
         }
     }
-
-    // Allocate memory for our columns
-    float *my_pixels = new float[3 * data->height * my_cols];
-
-    for (int cycle = data->mpi_rank * data->cycleSize; cycle < data->width; cycle += data->cycleSize * data->mpi_procs)
+    int total_pixels = 3 *data->width *columns_per_process;
+    float *pixels = new float[total_pixels];
+    int next = 0;
+    start_column = data->mpi_rank * data->cycleSize;
+    
+    for (int cycle = start_column; cycle < data->width; cycle += counter)
     {
         for (int column = cycle; (column - cycle < data->cycleSize) && (column < data->width); column++)
         {
             for (int row = 0; row < data->height; row++)
             {
-                //Calculate the index into the array.
-                int baseIndex = 3 * (bundle_column * data->width + row);
-                shadePixel(&(my_pixels[baseIndex]), row, column, data);
+
+                int baseIndex = 3 * (row + next * data->width);
+                shadePixel(&(pixels[baseIndex]), row, column, data);
             }
-            bundle_column++;
+            next++;
         }
     }
 
-    //Stop the comp. timer
+    
     double computationStop = MPI_Wtime();
     double computationTime = computationStop - computationStart;
 
-    MPI_Send(my_pixels, 3 * data->width * my_cols, MPI_FLOAT, 0, 0, MPI_COMM_WORLD);
+    MPI_Send(pixels,total_pixels, MPI_FLOAT, 0, 0, MPI_COMM_WORLD);
     MPI_Send(&computationTime, 1, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
 
-    delete[] my_pixels;
 }

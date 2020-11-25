@@ -301,24 +301,36 @@ void masterMPI_CyclicVertical(ConfigData *data, float *pixels)
     int start_cycle = data->cycleSize * data->mpi_rank;
     int cycle_counter = data->cycleSize *data->mpi_procs; 
 
-    for (int z = start_cycle; z < data->width; z+=cycle_counter)
-    {
-        for (int i = 0; i < data->height; i++)
-        {
-            for (int j = z; j < data->width; j++)
-            {
-                int row = i;
-                int column = j;
-                if(column < z + data->cycleSize)
-                {
-                    int baseIndex = 3 * (row * data->width + column);
-                    shadePixel(&(pixels[baseIndex]), row, column, data);
-                }
+    // for (int z = start_cycle; z < data->width; z+=cycle_counter)
+    // {
+    //     for (int i = 0; i < data->height; i++)
+    //     {
+    //         for (int j = z; j < data->width; j++)
+    //         {
+    //             int row = i;
+    //             int column = j;
+    //             if(column < z + data->cycleSize)
+    //             {
+    //                 int baseIndex = 3 * (row * data->width + column);
+    //                 shadePixel(&(pixels[baseIndex]), row, column, data);
+    //             }
                 
+    //         }
+    //     }
+    // }
+
+    for (int cycle = data->mpi_rank * data->cycleSize; cycle < data->width; cycle += data->cycleSize * data->mpi_procs)
+    {
+        for (int column = cycle; (column - cycle < data->cycleSize) && (column < data->width); column++)
+        {
+            for (int row = 0; row < data->height; row++)
+            {
+                //Calculate the index into the array.
+                int baseIndex = 3 * (row * data->width + column);
+                shadePixel(&(pixels[baseIndex]), row, column, data);
             }
         }
     }
-
 
     double computationStop = MPI_Wtime();
     double computationTime = computationStop - computationStart;
