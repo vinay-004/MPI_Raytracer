@@ -13,8 +13,8 @@
 #SBATCH -J rt_mpi
 
 # Standard out and Standard Error output files
-#SBATCH -o rt_mpi.out
-#SBATCH -e rt_mpi.err
+#SBATCH -o rt_mpi%t.out
+#SBATCH -e rt_mpi%t.err
 
 # In order for this to send emails, you will need to remove the
 # space between # and SBATCH for the following 2 commands.
