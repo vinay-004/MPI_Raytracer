@@ -222,6 +222,8 @@ void masterMPI_Vertical(ConfigData *data, float *pixels)
 
     double communicationStart = MPI_Wtime();
 
+    std::cout<<"getting rec : "<<data->mpi_procs<<std::endl;
+
     for (int proc = 1; proc < data->mpi_procs; proc++)
     {
         communicationTimebuf = 0;
