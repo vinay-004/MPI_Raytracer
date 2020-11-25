@@ -71,69 +71,55 @@ void slaveMain(ConfigData* data)
 
 void slaveMPIVertical(ConfigData *data) {
 
-
     double computationStart = MPI_Wtime();
 
-
-
-
-    int avg_columns_per_process = data->width / data->mpi_procs;
+    int columns_per_process = (data->width) / (data->mpi_procs);
     int remaining = data->width % data->mpi_procs;
+
     if (remaining > data->mpi_rank)
-    {
-        avg_columns_per_process++;
+    {              
+        columns_per_process++; 
     }
 
-    int start_column = (data->mpi_rank - 1) * avg_columns_per_process;
+    int start_column = data->mpi_rank * columns_per_process - 1; 
 
     if (remaining)
-    {
-        if (remaining > data->mpi_rank)
-        {
-
+    { 
+        if (data->mpi_rank - (remaining) < 0)
+        { 
             start_column++;
         }
         else
-        {
-            start_column = start_column + remaining + 1;
+        { 
+            start_column =start_column  + remaining + 1;
         }
     }
 
-    int end_column = start_column + avg_columns_per_process;
-
-    int total_pixels = 3 * avg_columns_per_process * data->height;
-    float* pixels = new float[total_pixels];
-
-    
-    int column_main = 0;
-
-    //Render the scene.
-    
-    for (int i = 0; i < data->height; ++i)
+    int total_pixels = 3 *data->height *columns_per_process;
+    float *pixels = new float[total_pixels];
+    int end_column = start_column + columns_per_process;
+    int next = 0;
+    for (int i = 0; i < data->height; i++)
     {
-        for (int j = start_column; j < end_column; ++j)
-        {
+        next = 0;
+        for (int j = start_column; j < end_column; j++)
+        { 
             int row = i;
             int column = j;
-
-            //Calculate the index into the array.
-            int baseIndex = 3 * (row * avg_columns_per_process + column_main);
-
-            //Call the function to shade the pixel.
-            shadePixel(&(pixels[baseIndex]), row, column, data);
+            int baseIndex = 3 * (row * columns_per_process + next);
+            shadePixel(&(pixels[baseIndex]), row, column, data); // Store RGB info for pixel
+            next++;
         }
-        column_main++;
+        
     }
-
-    double computationStop = 0;
+    //Stop the comp. timer
+    double computationStop = MPI_Wtime();
     double computationTime = computationStop - computationStart;
-    std::cout<<"computation Done : "<<data->mpi_rank<<std::endl;
 
-    MPI_Send(&pixels, total_pixels, MPI_FLOAT, 0, 0, MPI_COMM_WORLD);
-    //MPI_Send(&computationTime,1,MPI_DOUBLE,0,0,MPI_COMM_WORLD);
+    MPI_Send(pixels, total_pixels, MPI_FLOAT, 0, 0, MPI_COMM_WORLD);
+    MPI_Send(&computationTime, 1, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
 
-    std::cout<<"Sending done"<<computationTime<<" for proc : "<<data->mpi_rank<<std::endl;
-
+    
 }
 
 
