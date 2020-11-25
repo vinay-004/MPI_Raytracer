@@ -24,5 +24,4 @@ void masterMPI_Horizontal(ConfigData *data, float *pixels);
 void masterMPI_Vertical(ConfigData *data, float *pixels); 
 void masterMPI_Block(ConfigData *data, float *pixels);
 void masterMPI_CyclicVertical(ConfigData *data, float *pixels);
-void masterCyclesV(ConfigData *data, float *pixels);
 #endif
