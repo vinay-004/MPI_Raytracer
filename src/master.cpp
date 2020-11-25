@@ -187,84 +187,86 @@ void masterSequential(ConfigData* data, float* pixels)
 void masterMPI_Vertical(ConfigData *data, float *pixels)
 {
 
+    //Start the computation time timer.
     double computationStart = MPI_Wtime();
-    int avg_columns_per_process = data->width / data->mpi_procs;
 
-    int remaining = data->width % data->mpi_procs;
-    if (remaining > data->mpi_rank)
-    {
-        avg_columns_per_process++;
-    }
-
-    int start_column = avg_columns_per_process;
     MPI_Status status;
 
-    
+    int my_cols = (data->width) / (data->mpi_procs);
 
-    for (int i = 0; i < data->height; ++i)
-    {
-        // only the remaining columns in the master
-        for (int j = 0; j < avg_columns_per_process; ++j)
-        {
-            int row = i;
-            int column = j;
+    if (data->mpi_rank < (data->width % data->mpi_procs))
+    {              // Implies remainder,
+        my_cols++; // Increment to eliminate remainder
+    }
+
+    //Render the scene.
+    for (int column = 0; column < my_cols; column++)
+    { // Each assigned col
+        for (int row = 0; row < data->width; row++)
+        { // Each pixel in col
 
             //Calculate the index into the array.
             int baseIndex = 3 * (row * data->width + column);
 
-            //Call the function to shade the pixel.
-            shadePixel(&(pixels[baseIndex]), row, column, data);
+            shadePixel(&(pixels[baseIndex]), row, column, data); // Store RGB info for pixel
         }
     }
 
-   
-    double communicationTimebuf;
+    //Stop the comp. timer
     double computationStop = MPI_Wtime();
     double computationTime = computationStop - computationStart;
 
+    // Start the comm. timer
     double communicationStart = MPI_Wtime();
 
-    std::cout<<"getting rec : "<<data->mpi_procs<<std::endl;
+    int current_col = my_cols;
 
-    for (int proc = 1; proc < data->mpi_procs; proc++)
-    {
-        communicationTimebuf = 0;
-        int columns_per_process = data->width / data->mpi_procs;
-        remaining = data->width % data->mpi_procs;
-        if (remaining > proc)
-        {
-            columns_per_process++;
+    for (int i = 1; i < data->mpi_procs; i++)
+    { // Gather data from each processor
+
+        //Allocate buffer for receiving data
+        int recv_cols = (data->width) / (data->mpi_procs);
+
+        if (i < (data->width % data->mpi_procs))
+        {                // Implies remainder,
+            recv_cols++; // Increment to eliminate remainder
         }
 
-        int total_pixels = 3 * columns_per_process * data->height;
-        float *proc_pixel = new float[total_pixels];
-        std::cout << "Data starting : " <<proc<< std::endl;
-        MPI_Recv(&proc_pixel, total_pixels, MPI_FLOAT, proc, 0, MPI_COMM_WORLD, &status);
-        std::cout << "Data Recieved" << std::endl;
+        int recv_buf_size = 3 * recv_cols * data->height;
 
-        MPI_Recv(&communicationTimebuf,1,MPI_DOUBLE,proc,0,MPI_COMM_WORLD,&status);
-        std::cout << "time Recieved" << std::endl;
+        double comm_recv_buf = 0.0;
 
-        for (int i = 0; i < data->height; ++i)
-        {
-            // only the remaining columns in the master
-            for (int j = 0; j < columns_per_process; ++j)
-            {
-                int row = i;
-                int column = j;
+        float *recv_buf = new float[recv_buf_size];
 
-                //Calculate the index into the array.
-                int baseIndex = 3 * (row * data->width + start_column);
-                int slaveIndex = 3* (row * columns_per_process + column);
-                //Call the function to shade the pixel.
-                pixels[baseIndex] = proc_pixel[slaveIndex];
-                pixels[baseIndex + 1] = proc_pixel[slaveIndex + 1];
-                pixels[baseIndex + 2] = proc_pixel[slaveIndex + 2];
+        MPI_Recv(recv_buf, recv_buf_size, MPI_FLOAT, i, 0, MPI_COMM_WORLD, &status); // Update Tag to be nicer
+        MPI_Recv(&comm_recv_buf, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, &status);      // Get computation time from each processor.
+
+        if (comm_recv_buf > computationTime)
+        {                                    // Get largest computation time.
+            computationTime = comm_recv_buf; // The maximum comp time is the overall comp time.
+        }
+
+        for (int column = 0; column < recv_cols; column++)
+        { //Vertical Data col index
+            for (int row = 0; row < (data->height); row++)
+            { //Vertical Data row index
+
+                int recvIndex = 3 * (row * recv_cols + column);        // Base index for received image
+                int baseIndex = 3 * (row * data->width + current_col); // Base index for final image
+
+                //Copy Pixel
+                pixels[baseIndex] = recv_buf[recvIndex];
+                pixels[baseIndex + 1] = recv_buf[recvIndex + 1];
+                pixels[baseIndex + 2] = recv_buf[recvIndex + 2];
             }
-            start_column++;
+            current_col++;
         }
+
+        delete[] recv_buf;
     }
 
+    //After receiving from all processes, the communication time will
+    //be obtained.
     double communicationStop = MPI_Wtime();
     double communicationTime = communicationStop - communicationStart;
 
