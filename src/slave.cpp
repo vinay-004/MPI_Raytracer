@@ -81,7 +81,7 @@ void slaveMPIVertical(ConfigData *data) {
     int total_pixels = 3 * avg_columns_per_process * data->height;
     float* pixels = new float[total_pixels];
 
-    int start_column = data->mpi_rank* avg_columns_per_process;
+    int start_column = (data->mpi_rank-1)* avg_columns_per_process;
     int end_column = start_column + avg_columns_per_process;
     int column_main = 0;
 
@@ -113,6 +113,7 @@ void slaveMPIVertical(ConfigData *data) {
     std::cout<<"Sending done"<<computationTime<<" for proc : "<<data->mpi_rank<<std::endl;
 
 }
+
 
 // void slaveMPIBlock(ConfigData *data, float *pixels)
 // {
