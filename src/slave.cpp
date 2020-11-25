@@ -18,7 +18,7 @@ void slaveMain(ConfigData* data)
             //The slave will do nothing since this means sequential operation.
             break;
         case PART_MODE_STATIC_STRIPS_HORIZONTAL:
-            //slaveMPIHorizontal(data);
+            slaveMPIHorizontal(data);
             break;
         case PART_MODE_STATIC_STRIPS_VERTICAL:
             slaveMPIVertical(data);
@@ -33,41 +33,57 @@ void slaveMain(ConfigData* data)
     }
 }
 
-// void slaveMPIHorizontal(ConfigData *data, float *pixels)
-// {
 
-//     MPI_Status status;
-//     int start_row;
-//     int end_row;
+void slaveMPIHorizontal(ConfigData *data)
+{
 
-//     int total_pixels = 3 * data->width * data->height;
+    double computationStart = MPI_Wtime();
 
-//     MPI_Recv(&start_row, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, &status);
-//     MPI_Recv(&end_row, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, &status);
-//     MPI_Recv(&pixels, total_pixels, MPI_FLOAT, 0, 0, MPI_COMM_WORLD, &status);
+    int rows_per_process = (data->height) / (data->mpi_procs);
+    int remaining = data->height % data->mpi_procs;
 
-//     std::cout << "start_row : " << start_row << std::endl;
-//     std::cout << "end_row : " << end_row << std::endl;
-//     std::cout << "pixel : " << pixels[0] << std::endl;
+    if (remaining > data->mpi_rank)
+    {
+        rows_per_process++;
+    }
 
-//     //Render the scene.
-//     for (int i = start_row; i < end_row; ++i)
-//     {
-//         for (int j = 0; j <= data->height; ++j)
-//         {
-//             int row = i;
-//             int column = j;
+    int start_row = data->mpi_rank * rows_per_process - 1;
 
-//             //Calculate the index into the array.
-//             int baseIndex = 3 * (row * data->width + column);
+    if (remaining)
+    {
+        if (data->mpi_rank - (remaining) < 0)
+        {
+            start_row++;
+        }
+        else
+        {
+            start_row = start_row + remaining + 1;
+        }
+    }
 
-//             //Call the function to shade the pixel.
-//             shadePixel(&(pixels[baseIndex]), row, column, data);
-//         }
-//     }
+    int total_pixels = 3 * rows_per_process * data->width;
+    float *pixels = new float[total_pixels];
+    int end_row = start_row + rows_per_process;
+    int next = 0;
+    for (int i = start_row; i < end_row; i++)
+    {
+        for (int j = 0; j < data->width; j++)
+        {
+            int row = i;
+            int column = j;
+            int baseIndex = 3 * (next * data->width + column);
 
-//     MPI_Send(&pixels, total_pixels, MPI_FLOAT, 0, 1, MPI_COMM_WORLD);
-// }
+            shadePixel(&(pixels[baseIndex]), row, column, data);
+        }
+        next++;
+    }
+
+    double computationStop = MPI_Wtime();
+    double computationTime = computationStop - computationStart;
+
+    MPI_Send(pixels, total_pixels, MPI_FLOAT, 0, 0, MPI_COMM_WORLD);
+    MPI_Send(&computationTime, 1, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
+}
 
 void slaveMPIVertical(ConfigData *data) {
 
@@ -107,7 +123,7 @@ void slaveMPIVertical(ConfigData *data) {
             int row = i;
             int column = j;
             int baseIndex = 3 * (row * columns_per_process + next);
-            
+
             shadePixel(&(pixels[baseIndex]), row, column, data); 
             next++;
         }

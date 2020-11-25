@@ -4,7 +4,7 @@
 #include "RayTrace.h"
 
 void slaveMain( ConfigData *data );
-// void slaveMPIHorizontal(ConfigData *data, float *pixels);
+void slaveMPIHorizontal(ConfigData *data);
 void slaveMPIVertical(ConfigData *data);
 // void slaveMPIBlock(ConfigData *data, float *pixels);
 

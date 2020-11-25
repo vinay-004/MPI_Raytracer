@@ -38,9 +38,9 @@ void masterMain(ConfigData* data)
             break;
         case PART_MODE_STATIC_STRIPS_HORIZONTAL:
 
-            // startTime = MPI_Wtime();
-            // masterMPI_Horizontal(data, pixels);
-            // stopTime  = MPI_Wtime();
+            startTime = MPI_Wtime();
+            masterMPI_Horizontal(data, pixels);
+            stopTime  = MPI_Wtime();
             break;
         case PART_MODE_STATIC_STRIPS_VERTICAL:
 
@@ -184,6 +184,89 @@ void masterSequential(ConfigData* data, float* pixels)
 //     }
 // }
 
+void masterMPI_Horizontal(ConfigData *data, float *pixels)
+{
+
+    MPI_Status status;
+    double computationStart = MPI_Wtime();
+
+    int rows_per_process = data->height / data->mpi_procs;
+    int avg_per_process = rows_per_process;
+
+    int remaining_this_process = data->height % data->mpi_procs;
+    int remaining = remaining_this_process;
+    if (remaining > data->mpi_rank)
+    {
+        rows_per_process++;
+    }
+
+    for (int i = 0; i < rows_per_process; i++)
+    {
+        for (int j = 0; j < data->height; j++)
+        {
+            int row = i;
+            int column = j;
+            int baseIndex = 3 * (row * data->width + column);
+            shadePixel(&(pixels[baseIndex]), row, column, data);
+        }
+    }
+
+    int next = rows_per_process;
+
+    double computationStop = MPI_Wtime();
+    double computationTime = computationStop - computationStart;
+
+    double communicationStart = MPI_Wtime();
+
+    for (int proc = 1; proc < data->mpi_procs; proc++)
+    {
+
+        int rows_in_single_process = avg_per_process;
+
+        if (proc < remaining_this_process)
+        {
+            rows_in_single_process++;
+        }
+
+        int total_pixels = 3 * data->width * rows_per_process;
+
+        double comm_recv_buf = 0.0;
+
+        float *proc_pixels = new float[total_pixels];
+
+        MPI_Recv(proc_pixels, total_pixels, MPI_FLOAT, proc, 0, MPI_COMM_WORLD, &status);
+        MPI_Recv(&comm_recv_buf, 1, MPI_DOUBLE, proc, 0, MPI_COMM_WORLD, &status);
+
+        if (comm_recv_buf > computationTime)
+        {
+            computationTime = comm_recv_buf;
+        }
+
+        for (int row = 0; row < rows_in_single_process; row++)
+        {
+            for (int column = 0; column < data->height; column++)
+            {
+
+                int baseIndex = 3 * (next * data->width + column);
+                int procIndex = 3 * (row * data->width + column);
+
+                pixels[baseIndex] = proc_pixels[procIndex];
+                pixels[baseIndex + 1] = proc_pixels[procIndex + 1];
+                pixels[baseIndex + 2] = proc_pixels[procIndex + 2];
+            }
+            next++;
+        }
+    }
+
+    double communicationStop = MPI_Wtime();
+    double communicationTime = communicationStop - communicationStart;
+
+    std::cout << "Total Computation Time: " << computationTime << " seconds" << std::endl;
+    std::cout << "Total Communication Time: " << communicationTime << " seconds" << std::endl;
+    double c2cRatio = communicationTime / computationTime;
+    std::cout << "C-to-C Ratio: " << c2cRatio << std::endl;
+}
+
 void masterMPI_Vertical(ConfigData *data, float *pixels)
 {
 
@@ -230,13 +313,13 @@ void masterMPI_Vertical(ConfigData *data, float *pixels)
             columns_in_single_process++; 
         }
 
-        int recv_buf_size = 3 * columns_in_single_process * data->height;
+        int total_pixels = 3 * columns_in_single_process * data->height;
 
         double comm_recv_buf = 0.0;
 
-        float *recv_buf = new float[recv_buf_size];
+        float *proc_pixels = new float[total_pixels];
 
-        MPI_Recv(recv_buf, recv_buf_size, MPI_FLOAT, proc, 0, MPI_COMM_WORLD, &status); 
+        MPI_Recv(proc_pixels, total_pixels, MPI_FLOAT, proc, 0, MPI_COMM_WORLD, &status); 
         MPI_Recv(&comm_recv_buf, 1, MPI_DOUBLE, proc, 0, MPI_COMM_WORLD, &status);      
 
         if (comm_recv_buf > computationTime)
@@ -254,9 +337,9 @@ void masterMPI_Vertical(ConfigData *data, float *pixels)
                 int baseIndex = 3 * (row * data->width + next);
                 int procIndex = 3 * (row * columns_in_single_process + column);
 
-                pixels[baseIndex] = recv_buf[procIndex];
-                pixels[baseIndex + 1] = recv_buf[procIndex + 1];
-                pixels[baseIndex + 2] = recv_buf[procIndex + 2];
+                pixels[baseIndex] = proc_pixels[procIndex];
+                pixels[baseIndex + 1] = proc_pixels[procIndex + 1];
+                pixels[baseIndex + 2] = proc_pixels[procIndex + 2];
                 next++;
             }
             
