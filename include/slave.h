@@ -5,7 +5,7 @@
 
 void slaveMain( ConfigData *data );
 // void slaveMPIHorizontal(ConfigData *data, float *pixels);
-void slaveMPIVertical(ConfigData *data, float *pixels);
+void slaveMPIVertical(ConfigData *data);
 // void slaveMPIBlock(ConfigData *data, float *pixels);
 
 #endif
