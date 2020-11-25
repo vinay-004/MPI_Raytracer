@@ -27,6 +27,9 @@ void slaveMain(ConfigData* data)
         case PART_MODE_STATIC_BLOCKS:
             slaveMPIBlock(data);
             break;
+        case PART_MODE_STATIC_CYCLES_VERTICAL:
+            slaveMPICylicVertical(data);
+            break;
         default:
             std::cout << "This mode (" << data->partitioningMode;
             std::cout << ") is not currently implemented." << std::endl;
@@ -199,4 +202,51 @@ void slaveMPIBlock(ConfigData *data)
     MPI_Send(pixels, totat_pixels, MPI_FLOAT, 0, 0, MPI_COMM_WORLD);
     MPI_Send(&computationTime, 1, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
 
+}
+
+void slaveMPICylicVertical(ConfigData *data)
+{
+
+    double computationStart = MPI_Wtime();
+
+    int columns_per_process = 0;
+
+    int start_cycle = data->cycleSize * data->mpi_rank;
+    int cycle_counter = data->cycleSize * data->mpi_procs;
+
+    for (int z = start_cycle; z < data->width; z += cycle_counter)
+    {
+        for (int j = 0; j < data->width; j++)
+        {
+            int column = j;
+            if (column < z + data->cycleSize)
+                columns_per_process++;
+        }
+    }
+
+    int total_pixels = 3 * data->height * columns_per_process;
+    float *pixels = new float[total_pixels];
+    int next = 0;
+    for (int cycle = start_cycle; cycle < data->width; cycle += cycle_counter)
+    {
+        for (int column = 0; column < data->width; column++)
+        {
+            for (int row = 0; row < (data->height); row++)
+            {
+
+                if (column < cycle + data->cycleSize)
+                {
+                    int baseIndex = 3 * (row + data->width * next);
+                    shadePixel(&(pixels[baseIndex]), row, column, data);
+                }
+            }
+            next++;
+        }
+    }
+
+    double computationStop = MPI_Wtime();
+    double computationTime = computationStop - computationStart;
+
+    MPI_Send(pixels, total_pixels, MPI_FLOAT, 0, 0, MPI_COMM_WORLD);
+    MPI_Send(&computationTime, 1, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
 }

@@ -54,6 +54,13 @@ void masterMain(ConfigData* data)
             masterMPI_Block(data, pixels);
             stopTime = MPI_Wtime();
             break;
+        case PART_MODE_STATIC_CYCLES_VERTICAL:
+
+            startTime = MPI_Wtime();
+            masterMPI_CyclicVertical(data, pixels);
+            stopTime = MPI_Wtime();
+            break;
+
         default:
             std::cout << "This mode (" << data->partitioningMode;
             std::cout << ") is not currently implemented." << std::endl;
@@ -279,6 +286,109 @@ void masterMPI_Vertical(ConfigData *data, float *pixels)
     double communicationTime = communicationStop - communicationStart;
 
     
+    std::cout << "Total Computation Time: " << computationTime << " seconds" << std::endl;
+    std::cout << "Total Communication Time: " << communicationTime << " seconds" << std::endl;
+    double c2cRatio = communicationTime / computationTime;
+    std::cout << "C-to-C Ratio: " << c2cRatio << std::endl;
+}
+
+void masterMPI_CyclicVertical(ConfigData *data, float *pixels)
+{
+
+    MPI_Status status;
+    double computationStart = MPI_Wtime();
+
+    int columns_per_process = (data->width) / (data->mpi_procs);
+    int avg_per_process = columns_per_process;
+
+    int remaining_this_process = data->width % data->mpi_procs;
+    int remaining = remaining_this_process;
+    if (remaining > data->mpi_rank)
+    {
+        columns_per_process++;
+    }
+
+
+    int start_cycle = data->cycleSize * data->mpi_rank;
+    int cycle_counter = data->cycleSize *data->mpi_procs; 
+
+    for (int z = start_cycle; z < data->width; z+=cycle_counter)
+    {
+        for (int i = 0; i < data->height; i++)
+        {
+            for (int j = 0; j < data->width; j++)
+            {
+                int row = i;
+                int column = j;
+                if(column < z + data->cycleSize)
+                {
+                    int baseIndex = 3 * (row * data->width + column);
+                    shadePixel(&(pixels[baseIndex]), row, column, data);
+                }
+                
+            }
+        }
+    }
+
+
+    double computationStop = MPI_Wtime();
+    double computationTime = computationStop - computationStart;
+
+    double communicationStart = MPI_Wtime();
+
+    for (int proc = 1; proc < data->mpi_procs; proc++)
+    {
+        int next = 0;
+        int columns_in_single_process = 0;
+        start_cycle = data->cycleSize * proc;
+        for (int z = start_cycle; z < data->width; z += cycle_counter)
+        { 
+            for (int j = 0; j < data->width; j++)
+            {
+                int column = j;
+                if (column < z + data->cycleSize)
+                    columns_in_single_process++;
+            }
+        }
+
+        int total_pixels = 3 * columns_in_single_process * data->height;
+
+        double comm_recv_buf = 0.0;
+
+        float *proc_pixels = new float[total_pixels];
+
+        MPI_Recv(proc_pixels, total_pixels, MPI_FLOAT, proc, 0, MPI_COMM_WORLD, &status);
+        MPI_Recv(&comm_recv_buf, 1, MPI_DOUBLE, proc, 0, MPI_COMM_WORLD, &status);
+
+        
+
+        for (int cycle = start_cycle; cycle < data->width; cycle+= cycle_counter)
+        {
+            for (int column = 0; column < data->width; column++)
+            {
+                for (int row = 0; row < (data->height); row++)
+                {
+
+                    if (column < cycle + data->cycleSize)
+                    {
+                        int baseIndex = 3 * (row * data->width + column);
+                        int procIndex = 3 * (row + next*data->height);
+
+                        pixels[baseIndex] = proc_pixels[procIndex];
+                        pixels[baseIndex + 1] = proc_pixels[procIndex + 1];
+                        pixels[baseIndex + 2] = proc_pixels[procIndex + 2];
+                    }
+                }
+                next++;
+            }
+        }
+        
+        
+    }
+
+    double communicationStop = MPI_Wtime();
+    double communicationTime = communicationStop - communicationStart;
+
     std::cout << "Total Computation Time: " << computationTime << " seconds" << std::endl;
     std::cout << "Total Communication Time: " << communicationTime << " seconds" << std::endl;
     double c2cRatio = communicationTime / computationTime;
