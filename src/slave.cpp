@@ -107,12 +107,13 @@ void slaveMPIVertical(ConfigData *data) {
             int row = i;
             int column = j;
             int baseIndex = 3 * (row * columns_per_process + next);
-            shadePixel(&(pixels[baseIndex]), row, column, data); // Store RGB info for pixel
+            
+            shadePixel(&(pixels[baseIndex]), row, column, data); 
             next++;
         }
         
     }
-    //Stop the comp. timer
+    
     double computationStop = MPI_Wtime();
     double computationTime = computationStop - computationStart;
 
