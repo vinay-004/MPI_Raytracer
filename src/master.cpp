@@ -388,9 +388,9 @@ void masterMPI_Block(ConfigData *data, float *pixels)
                 int baseIndex = 3 * (row * data->width + column);
                 int procIndex = 3 * ((row - proc_start_rows) * proc_rows + (column - proc_start_columns));
 
-                pixels[baseIndex] = recv_buf[procIndex];
-                pixels[baseIndex + 1] = recv_buf[procIndex + 1];
-                pixels[baseIndex + 2] = recv_buf[procIndex + 2];
+                pixels[baseIndex] = proc_pixels[procIndex];
+                pixels[baseIndex + 1] = proc_pixels[procIndex + 1];
+                pixels[baseIndex + 2] = proc_pixels[procIndex + 2];
             }
         }
 
