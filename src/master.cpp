@@ -233,7 +233,7 @@ void masterMPI_Vertical(ConfigData *data, float *pixels)
         MPI_Recv(&proc_pixel, total_pixels, MPI_FLOAT, proc, 0, MPI_COMM_WORLD, &status);
         std::cout << "Data Recieved" << std::endl;
 
-        MPI_Recv(&communicationTimebuf,1,MPI_DOUBLE,proc,0,MPI_COMM_WORLD,&status);
+        //MPI_Recv(&communicationTimebuf,1,MPI_DOUBLE,proc,0,MPI_COMM_WORLD,&status);
         std::cout << "time Recieved" << std::endl;
 
         for (int i = 0; i < data->height; ++i)
