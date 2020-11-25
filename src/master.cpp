@@ -305,7 +305,7 @@ void masterMPI_CyclicVertical(ConfigData *data, float *pixels)
     {
         for (int i = 0; i < data->height; i++)
         {
-            for (int j = 0; j < data->width; j++)
+            for (int j = z; j < data->width; j++)
             {
                 int row = i;
                 int column = j;

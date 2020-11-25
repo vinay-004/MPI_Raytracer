@@ -216,7 +216,7 @@ void slaveMPICylicVertical(ConfigData *data)
 
     for (int z = start_cycle; z < data->width; z += cycle_counter)
     {
-        for (int j = 0; j < data->width; j++)
+        for (int j = z; j < data->width; j++)
         {
             int column = j;
             if (column < z + data->cycleSize)
