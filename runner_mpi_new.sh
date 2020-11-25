@@ -13,8 +13,8 @@
 #SBATCH -J rt_mpi
 
 # Standard out and Standard Error output files
-#SBATCH -o rt_mpi.out
-#SBATCH -e rt_mpi.err
+#SBATCH -o rt_mpi%t.out
+#SBATCH -e rt_mpi%t.err
 
 # In order for this to send emails, you will need to remove the
 # space between # and SBATCH for the following 2 commands.
@@ -59,7 +59,7 @@ module load openmpi
 # Static Strips
 #srun -n $SLURM_NPROCS raytrace_mpi -h 100 -w 100 -c configs/twhitted.xml -p static_strips_horizontal
 # Static Cycles
-srun -n $SLURM_NPROCS raytrace_mpi -h 5000 -w 5000 -c configs/twhitted.xml -p static_cycles_vertical -cs 5
+srun -n $SLURM_NPROCS raytrace_mpi -h 5000 -w 5000 -c configs/box.xml -p static_cycles_vertical -cs 5
 # Static Blocks
 #srun -n $SLURM_NPROCS raytrace_mpi -h 100 -w 100 -c configs/twhitted.xml -p static_blocks 
 # Dynamic
