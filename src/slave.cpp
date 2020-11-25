@@ -105,8 +105,9 @@ void slaveMPIVertical(ConfigData *data) {
 
     double computationStop = 0;
     double computationTime = computationStop - computationStart;
+    std::cout<<"computation Done : "<<data->mpi_rank<<std::endl;
 
-    MPI_Send(&pixels, total_pixels, MPI_FLOAT, 0, 1, MPI_COMM_WORLD);
+    MPI_Send(&pixels, total_pixels, MPI_FLOAT, 0, 0, MPI_COMM_WORLD);
     MPI_Send(&computationTime,1,MPI_DOUBLE,0,0,MPI_COMM_WORLD);
 
 }

@@ -213,8 +213,6 @@ void masterMPI_Vertical(ConfigData *data, float *pixels)
     }
 
    
-    int total_pixels = 3 * avg_columns_per_process * data->height;
-    float *proc_pixel = new float[total_pixels];
     double communicationTimebuf = 0;
     start_column = 0;
     end_column = 0;
@@ -227,7 +225,9 @@ void masterMPI_Vertical(ConfigData *data, float *pixels)
     for (int proc = 1; proc < data->mpi_procs; proc++)
     {
         communicationTimebuf = 0;
-        MPI_Recv(&proc_pixel, total_pixels, MPI_FLOAT, proc, 1, MPI_COMM_WORLD, &status);
+        int total_pixels = 3 * avg_columns_per_process * data->height;
+        float *proc_pixel = new float[total_pixels];
+        MPI_Recv(&proc_pixel, total_pixels, MPI_FLOAT, proc, 0, MPI_COMM_WORLD, &status);
         MPI_Recv(&communicationTimebuf,1,MPI_DOUBLE,proc,0,MPI_COMM_WORLD,&status);
 
 
