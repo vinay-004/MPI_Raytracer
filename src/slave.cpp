@@ -143,7 +143,7 @@ void slaveMPIVertical(ConfigData *data) {
 
 void slaveMPIBlock(ConfigData *data)
 {
-    double computationTime = MPI_Wtime();
+    double computationStart = MPI_Wtime();
 
     MPI_Status status;
     int each_proc_sqrt = (int)sqrt(data->mpi_procs);
@@ -193,5 +193,10 @@ void slaveMPIBlock(ConfigData *data)
         }
     }
 
-    MPI_Send(&pixels, totat_pixels, MPI_FLOAT, 0, 1, MPI_COMM_WORLD);
+    double computationStop = MPI_Wtime();
+    double computationTime = computationStop - computationStart;
+
+    MPI_Send(pixels, totat_pixels, MPI_FLOAT, 0, 0, MPI_COMM_WORLD);
+    MPI_Send(&computationTime, 1, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
+
 }
