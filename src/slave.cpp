@@ -141,7 +141,7 @@ void slaveMPIVertical(ConfigData *data) {
 }
 
 
-void slaveMPIBlock(ConfigData *data, float *pixels)
+void slaveMPIBlock(ConfigData *data)
 {
     double computationTime = MPI_Wtime();
 
@@ -185,10 +185,9 @@ void slaveMPIBlock(ConfigData *data, float *pixels)
             int column = j;
             
             int base_row = row - start_row;
-            int proc_row_width = columns_per_process;
             int base_column = column - start_column;
 
-            int baseIndex = 3 * (base_row * proc_row_width + base_column);
+            int baseIndex = 3 * (base_row * columns_per_process + base_column);
 
             shadePixel(&(pixels[baseIndex]), row, column, data);
         }
