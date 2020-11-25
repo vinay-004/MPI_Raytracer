@@ -116,7 +116,7 @@ void slaveMPIVertical(ConfigData *data) {
     MPI_Send(my_pixels, 3 * data->width * my_cols, MPI_FLOAT, 0, 0, MPI_COMM_WORLD);
     MPI_Send(&computationTime, 1, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
 
-    delete[] my_pixels;
+    
 }
 
 

@@ -262,7 +262,7 @@ void masterMPI_Vertical(ConfigData *data, float *pixels)
             current_col++;
         }
 
-        delete[] recv_buf;
+        
     }
 
     //After receiving from all processes, the communication time will
