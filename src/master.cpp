@@ -303,9 +303,9 @@ void masterMPI_Block(ConfigData *data, float *pixels)
     
     if (remaining_columns)
     {
-        if ((data->mpi_rank % (each_proc_sqrt)) == (each_proc_sqrt)-1)
+        if ((data->mpi_rank % each_proc_sqrt) == each_proc_sqrt-1)
         { 
-            columns_per_process += remaining_columns;
+            columns_per_process =columns_per_process +  remaining_columns;
         }
     }
     
@@ -313,7 +313,7 @@ void masterMPI_Block(ConfigData *data, float *pixels)
     {
         if (data->mpi_rank / (each_proc_sqrt) == (each_proc_sqrt)-1)
         { 
-            rows_per_process += remaining_rows;
+            rows_per_process =rows_per_process +  remaining_rows;
         }
     }
 
@@ -345,13 +345,13 @@ void masterMPI_Block(ConfigData *data, float *pixels)
         int proc_columns = data->width / (each_proc_sqrt);
         int proc_rows = data->height / (each_proc_sqrt);
 
-        int proc_start_columns = (proc / (each_proc_sqrt)) * proc_columns;
-        int proc_start_rows = (proc % (each_proc_sqrt)) * proc_rows;
+        int proc_start_columns = (proc % (each_proc_sqrt)) * proc_columns;
+        int proc_start_rows = (proc / (each_proc_sqrt)) * proc_rows;
 
         
         if (remaining_columns)
         {
-            if (proc % (each_proc_sqrt) == (each_proc_sqrt) - 1)
+            if (proc / (each_proc_sqrt) == (each_proc_sqrt) - 1)
             { 
                 proc_columns += remaining_columns;
             }
@@ -359,7 +359,7 @@ void masterMPI_Block(ConfigData *data, float *pixels)
       
         if (remaining_rows)
         {
-            if ((proc / (each_proc_sqrt)) == (each_proc_sqrt) - 1)
+            if ((proc % (each_proc_sqrt)) == (each_proc_sqrt) - 1)
             { 
                 proc_rows += remaining_rows;
             }
@@ -382,11 +382,9 @@ void masterMPI_Block(ConfigData *data, float *pixels)
                 int row = i;
                 int column = j;
 
-                int proc_row_width = row - proc_start_rows;
-                int proc_col_width = column - proc_start_columns;
 
                 int baseIndex = 3 * (row * data->width + column);
-                int procIndex = 3 * ((row - proc_start_rows) * proc_rows + (column - proc_start_columns));
+                int procIndex = 3 * ((row - proc_start_rows) * proc_columns + (column - proc_start_columns));
 
                 pixels[baseIndex] = proc_pixels[procIndex];
                 pixels[baseIndex + 1] = proc_pixels[procIndex + 1];
