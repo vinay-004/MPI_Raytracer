@@ -189,17 +189,22 @@ void masterMPI_Vertical(ConfigData *data, float *pixels)
 
     double computationStart = MPI_Wtime();
     int avg_columns_per_process = data->width / data->mpi_procs;
-    int start_column = 0;
-    int end_column = 0;
+
+    int remaining = data->width % data->mpi_procs;
+    if (remaining > data->mpi_rank)
+    {
+        avg_columns_per_process++;
+    }
+
+    int start_column = avg_columns_per_process;
     MPI_Status status;
 
-
-    start_column = data->mpi_procs*avg_columns_per_process;
+    
 
     for (int i = 0; i < data->height; ++i)
     {
         // only the remaining columns in the master
-        for (int j = start_column; j < data->width; ++j)
+        for (int j = 0; j < avg_columns_per_process; ++j)
         {
             int row = i;
             int column = j;
@@ -208,15 +213,12 @@ void masterMPI_Vertical(ConfigData *data, float *pixels)
             int baseIndex = 3 * (row * data->width + column);
 
             //Call the function to shade the pixel.
-            shadePixel(&(pixels[baseIndex]), row, j, data);
+            shadePixel(&(pixels[baseIndex]), row, column, data);
         }
     }
 
    
     double communicationTimebuf;
-    start_column = 0;
-    end_column = 0;
-
     double computationStop = MPI_Wtime();
     double computationTime = computationStop - computationStart;
 
@@ -227,26 +229,33 @@ void masterMPI_Vertical(ConfigData *data, float *pixels)
     for (int proc = 1; proc < data->mpi_procs; proc++)
     {
         communicationTimebuf = 0;
-        int total_pixels = 3 * avg_columns_per_process * data->height;
+        int columns_per_process = data->width / data->mpi_procs;
+        remaining = data->width % data->mpi_procs;
+        if (remaining > proc)
+        {
+            columns_per_process++;
+        }
+
+        int total_pixels = 3 * columns_per_process * data->height;
         float *proc_pixel = new float[total_pixels];
-        std::cout << "Data starting" <<proc<< std::endl;
+        std::cout << "Data starting : " <<proc<< std::endl;
         MPI_Recv(&proc_pixel, total_pixels, MPI_FLOAT, proc, 0, MPI_COMM_WORLD, &status);
         std::cout << "Data Recieved" << std::endl;
 
-        //MPI_Recv(&communicationTimebuf,1,MPI_DOUBLE,proc,0,MPI_COMM_WORLD,&status);
+        MPI_Recv(&communicationTimebuf,1,MPI_DOUBLE,proc,0,MPI_COMM_WORLD,&status);
         std::cout << "time Recieved" << std::endl;
 
         for (int i = 0; i < data->height; ++i)
         {
             // only the remaining columns in the master
-            for (int j = 0; j < avg_columns_per_process; ++j)
+            for (int j = 0; j < columns_per_process; ++j)
             {
                 int row = i;
                 int column = j;
 
                 //Calculate the index into the array.
                 int baseIndex = 3 * (row * data->width + start_column);
-                int slaveIndex = 3* (row * avg_columns_per_process + column);
+                int slaveIndex = 3* (row * columns_per_process + column);
                 //Call the function to shade the pixel.
                 pixels[baseIndex] = proc_pixel[slaveIndex];
                 pixels[baseIndex + 1] = proc_pixel[slaveIndex + 1];
