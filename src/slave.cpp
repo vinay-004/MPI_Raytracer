@@ -110,6 +110,8 @@ void slaveMPIVertical(ConfigData *data) {
     MPI_Send(&pixels, total_pixels, MPI_FLOAT, 0, 0, MPI_COMM_WORLD);
     MPI_Send(&computationTime,1,MPI_DOUBLE,0,0,MPI_COMM_WORLD);
 
+    std::cout<<"Sending done"<<computationTime<<" for proc : "<<data->mpi_rank<<std::endl;
+
 }
 
 // void slaveMPIBlock(ConfigData *data, float *pixels)
